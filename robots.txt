@@ -1,0 +1,6 @@
+# После покупки домена замените example.ru на ваш адрес
+User-agent: *
+Allow: /
+Disallow: /docs/
+
+Sitemap: https://example.ru/sitemap.xml
