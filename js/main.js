@@ -58,17 +58,86 @@
     a.href = isPlaceholder(url) ? "#consult" : url;
   });
 
-  /* ---------- Практики ---------- */
+  /* ---------- Практики: тематические блоки с подразделами ---------- */
 
   var practicesSlot = slot("practices");
+  var practicesMq = window.matchMedia("(max-width: 640px)");
+
   if (practicesSlot) {
-    SITE.practices.forEach(function (p, i) {
-      var card = el("article", "practice reveal");
-      card.style.setProperty("--reveal-delay", (i % 3) * 0.12 + "s");
-      card.appendChild(el("span", "practice-no", "( " + String(i + 1).padStart(2, "0") + " )"));
-      card.appendChild(el("h3", null, esc(p.title)));
-      card.appendChild(el("p", null, esc(p.text)));
-      practicesSlot.appendChild(card);
+    SITE.practices.forEach(function (group, i) {
+      var block = el("section", "practice-group reveal");
+
+      var head = el("div", "practice-group-head");
+      head.appendChild(el("span", "practice-no", "( " + String(i + 1).padStart(2, "0") + " )"));
+      head.appendChild(el("h3", null, esc(group.title)));
+      block.appendChild(head);
+
+      var subs = el("div", "practice-subs");
+      group.items.forEach(function (item) {
+        var d = el("details", "practice-sub");
+        d.open = !practicesMq.matches;
+        d.innerHTML =
+          "<summary><h4>" + esc(item.title) + '</h4><span class="practice-mark" aria-hidden="true">+</span></summary>' +
+          "<p>" + esc(item.text) + "</p>";
+        subs.appendChild(d);
+      });
+      block.appendChild(subs);
+
+      practicesSlot.appendChild(block);
+    });
+
+    /* На мобильных подразделы сворачиваются в аккордеоны, на десктопе всегда раскрыты */
+    function syncPracticeAccordions() {
+      document.querySelectorAll(".practice-sub").forEach(function (d) {
+        d.open = !practicesMq.matches;
+      });
+    }
+    if (practicesMq.addEventListener) {
+      practicesMq.addEventListener("change", syncPracticeAccordions);
+    } else if (practicesMq.addListener) {
+      practicesMq.addListener(syncPracticeAccordions);
+    }
+  }
+
+  /* ---------- Кнопка «Связаться»: меню мессенджеров ---------- */
+
+  var contactMenu = document.getElementById("contact-menu");
+  var contactToggle = document.querySelector(".contact-toggle");
+  if (contactMenu && contactToggle) {
+    var messengers = C.messengers || {};
+    [
+      ["Telegram", messengers.telegram],
+      ["MAX", messengers.max],
+      ["WhatsApp", messengers.whatsapp]
+    ].forEach(function (pair) {
+      var a = el("a", null, esc(pair[0]));
+      if (isPlaceholder(pair[1])) {
+        a.href = "#";
+      } else {
+        a.href = pair[1];
+        a.target = "_blank";
+        a.rel = "noopener";
+      }
+      contactMenu.appendChild(a);
+    });
+
+    function closeContactMenu() {
+      contactMenu.hidden = true;
+      contactToggle.setAttribute("aria-expanded", "false");
+    }
+
+    contactToggle.addEventListener("click", function () {
+      var open = contactMenu.hidden;
+      contactMenu.hidden = !open;
+      contactToggle.setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", function (e) {
+      if (!contactMenu.hidden && !contactMenu.contains(e.target) && e.target !== contactToggle) {
+        closeContactMenu();
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeContactMenu();
     });
   }
 
@@ -589,7 +658,7 @@
   /* ---------- Появление блоков при скролле ---------- */
 
   document.querySelectorAll(
-    ".section-head, .about-grid > *, .reviews-cta, .documents-gate, .consult-grid > *, .interlude-quote"
+    ".section-head, .about-grid > *, .reviews-cta, .documents-gate, .consult-grid > *, .interlude-quote, .demand-grid > *, .timely-inner"
   ).forEach(function (n) { n.classList.add("reveal"); });
 
   var observer = new IntersectionObserver(function (entries) {
@@ -624,7 +693,9 @@
     "description": "Судебный юрист: банкротство физических и юридических лиц, субсидиарная ответственность, оспаривание сделок, семейные, налоговые, таможенные и корпоративные споры.",
     "areaServed": "Россия",
     "address": { "@type": "PostalAddress", "addressLocality": "Москва", "addressCountry": "RU" },
-    "knowsAbout": SITE.practices.map(function (p) { return p.title; })
+    "knowsAbout": SITE.practices.reduce(function (acc, group) {
+      return acc.concat([group.title], group.items.map(function (item) { return item.title; }));
+    }, [])
   });
 
   addJsonLd({
