@@ -447,6 +447,12 @@ h2 {
   line-height: 1.1;
 }
 
+.practice-intro {
+  margin: 1rem 0 0;
+  color: var(--ink-60);
+  max-width: 42ch;
+}
+
 .practice-subs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -483,6 +489,38 @@ h2 {
   font-size: .92rem;
   color: var(--ink-60);
   max-width: 52ch;
+}
+
+.practice-points {
+  margin: .7rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: .92rem;
+  color: var(--ink-60);
+}
+
+.practice-points li {
+  position: relative;
+  padding-left: 1em;
+}
+
+.practice-points li + li { margin-top: .35rem; }
+
+.practice-points li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+}
+
+.practice-outro {
+  grid-column: 1 / -1;
+  margin: 1.2rem 0 0;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--wine);
+  max-width: 58ch;
 }
 
 .practice-mark {

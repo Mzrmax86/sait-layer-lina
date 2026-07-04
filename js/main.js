@@ -70,6 +70,9 @@
       var head = el("div", "practice-group-head");
       head.appendChild(el("span", "practice-no", "( " + String(i + 1).padStart(2, "0") + " )"));
       head.appendChild(el("h3", null, esc(group.title)));
+      if (group.intro) {
+        head.appendChild(el("p", "practice-intro", esc(group.intro)));
+      }
       block.appendChild(head);
 
       var subs = el("div", "practice-subs");
@@ -77,10 +80,21 @@
         var d = el("details", "practice-sub");
         d.open = !practicesMq.matches;
         d.innerHTML =
-          "<summary><h4>" + esc(item.title) + '</h4><span class="practice-mark" aria-hidden="true">+</span></summary>' +
-          "<p>" + esc(item.text) + "</p>";
+          "<summary><h4>" + esc(item.title) + '</h4><span class="practice-mark" aria-hidden="true">+</span></summary>';
+        if (item.points && item.points.length) {
+          var list = el("ul", "practice-points");
+          item.points.forEach(function (point) {
+            list.appendChild(el("li", null, esc(point)));
+          });
+          d.appendChild(list);
+        } else if (item.text) {
+          d.appendChild(el("p", null, esc(item.text)));
+        }
         subs.appendChild(d);
       });
+      if (group.outro) {
+        subs.appendChild(el("p", "practice-outro", esc(group.outro)));
+      }
       block.appendChild(subs);
 
       practicesSlot.appendChild(block);
