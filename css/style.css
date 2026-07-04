@@ -933,7 +933,7 @@ h2 {
 
 .interlude-quote p {
   margin: 0;
-  max-width: 34ch;
+  max-width: 44ch;
   font-family: var(--serif);
   font-style: italic;
   font-weight: 500;
@@ -1700,7 +1700,7 @@ h2 {
 
   .hero { padding-top: 104px; }
   .hero-grid { grid-template-columns: 1fr; align-items: start; }
-  .hero-photo img { height: clamp(380px, 58vw, 520px); object-position: 50% 12%; }
+  .hero-photo img { height: clamp(240px, 58vw, 420px); object-position: 50% 12%; }
   .hero-photo figcaption { display: none; }
 
   .practice-group { grid-template-columns: 1fr; gap: 1.4rem; }
@@ -1710,12 +1710,16 @@ h2 {
 
   .reviews-grid { grid-template-columns: 1fr; max-width: 620px; }
 
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-brand { grid-column: 1 / -1; }
+}
+
+@media (max-width: 1100px) {
+  .reviews-grid { grid-template-columns: 1fr; max-width: 720px; }
+
   .demand-grid { grid-template-columns: 1fr; }
 
   .consult-grid { grid-template-columns: 1fr; }
-
-  .footer-grid { grid-template-columns: 1fr 1fr; }
-  .footer-brand { grid-column: 1 / -1; }
 }
 
 @media (max-width: 640px) {
@@ -1741,4 +1745,7 @@ h2 {
   .tg-float { height: 52px; min-width: 52px; padding: 0 14px; }
 
   .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+
+  .interlude { height: clamp(280px, 52vh, 420px); }
+  .interlude-quote p { max-width: 38ch; }
 }
