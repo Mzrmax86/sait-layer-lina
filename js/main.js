@@ -147,6 +147,7 @@
       var detail = el("div", "practice-detail");
       detail.hidden = true;
       if (single) {
+        detail.appendChild(el("h4", "practice-sub-title practice-single-title", esc(group.items[0].title)));
         var rest = el("ul", "practice-points");
         group.items[0].points.slice(4).forEach(function (point) {
           rest.appendChild(el("li", null, esc(point)));

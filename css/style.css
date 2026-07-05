@@ -726,9 +726,14 @@ h2 {
 }
 
 /* Для практик с одним разделом второй уровень — плоский список */
-.practice-detail > .practice-points {
+.practice-single-title {
   border-top: 1px solid var(--line);
+  margin: 0;
   padding-top: 1.2rem;
+}
+
+.practice-detail > .practice-points {
+  margin-top: .7rem;
 }
 
 .practice-outro {
