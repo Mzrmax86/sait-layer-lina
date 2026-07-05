@@ -50,6 +50,16 @@
     }
   }
 
+  /* Выделение ключевых слов в описании первого экрана */
+  var heroAccents = ["С 2011 года", "с 2011 года", "граждан и бизнеса", "индивидуальную стратегию"];
+  document.querySelectorAll(".hero-sub").forEach(function (p) {
+    var html = esc(p.textContent);
+    heroAccents.forEach(function (phrase) {
+      html = html.split(esc(phrase)).join('<strong class="hero-accent">' + esc(phrase) + "</strong>");
+    });
+    p.innerHTML = html;
+  });
+
   /* ---------- Ссылки на телеграм и соцсети (data-link) ---------- */
 
   document.querySelectorAll("[data-link]").forEach(function (a) {
@@ -58,17 +68,193 @@
     a.href = isPlaceholder(url) ? "#consult" : url;
   });
 
-  /* ---------- Практики ---------- */
+  /* ---------- Практики: вкладки на десктопе, аккордеоны на мобильных ----------
+     Первый уровень — название, короткое интро и ключевые направления.
+     Полные списки открываются кнопкой «Раскрыть все направления». */
 
   var practicesSlot = slot("practices");
+
+  function stripEnd(s) {
+    return String(s).replace(/[;.]\s*$/, "");
+  }
+
   if (practicesSlot) {
-    SITE.practices.forEach(function (p, i) {
-      var card = el("article", "practice reveal");
-      card.style.setProperty("--reveal-delay", (i % 3) * 0.12 + "s");
-      card.appendChild(el("span", "practice-no", "( " + String(i + 1).padStart(2, "0") + " )"));
-      card.appendChild(el("h3", null, esc(p.title)));
-      card.appendChild(el("p", null, esc(p.text)));
-      practicesSlot.appendChild(card);
+    var shell = el("div", "practices-shell reveal");
+    var practiceTabs = el("div", "practice-tabs");
+    var practicePanels = el("div", "practice-panels");
+    var tabButtons = [];
+    var panelBlocks = [];
+
+    function activatePractice(index) {
+      tabButtons.forEach(function (b, k) {
+        b.classList.toggle("active", k === index);
+        b.setAttribute("aria-pressed", String(k === index));
+      });
+      panelBlocks.forEach(function (p, k) {
+        p.classList.toggle("active", k === index);
+      });
+    }
+
+    SITE.practices.forEach(function (group, i) {
+      var no = String(i + 1).padStart(2, "0");
+
+      /* Вкладка в левой колонке (desktop) */
+      var tab = el("button", "practice-tab");
+      tab.type = "button";
+      tab.innerHTML =
+        '<span class="practice-no">' + no + "</span>" +
+        '<span class="practice-tab-name">' + esc(group.title) + "</span>" +
+        '<span class="practice-tab-arrow" aria-hidden="true">&rarr;</span>';
+      tab.addEventListener("click", function () { activatePractice(i); });
+      practiceTabs.appendChild(tab);
+      tabButtons.push(tab);
+
+      var panel = el("article", "practice-panel");
+
+      /* Заголовок-аккордеон (mobile) */
+      var head = el("button", "practice-panel-toggle");
+      head.type = "button";
+      head.setAttribute("aria-expanded", "false");
+      head.innerHTML =
+        '<span class="practice-no">' + no + "</span>" +
+        '<span class="practice-panel-name">' + esc(group.title) + "</span>" +
+        '<span class="practice-mark" aria-hidden="true">+</span>';
+      head.addEventListener("click", function () {
+        var open = !panel.classList.contains("open");
+        panel.classList.toggle("open", open);
+        head.setAttribute("aria-expanded", String(open));
+      });
+      panel.appendChild(head);
+
+      var body = el("div", "practice-panel-body");
+      body.appendChild(el("h3", "practice-title", esc(group.title)));
+      if (group.intro) {
+        body.appendChild(el("p", "practice-intro", esc(group.intro)));
+      }
+
+      /* Первый уровень: ключевые направления */
+      var single = group.items.length === 1;
+      var keys = el("ul", "practice-keys");
+      var keyTitles = single
+        ? group.items[0].points.slice(0, 4).map(stripEnd)
+        : group.items.map(function (item) { return item.title; });
+      keyTitles.forEach(function (t) {
+        keys.appendChild(el("li", null, esc(t)));
+      });
+      body.appendChild(keys);
+
+      /* Второй уровень: подробные списки */
+      var detail = el("div", "practice-detail");
+      detail.hidden = true;
+      if (single) {
+        detail.appendChild(el("h4", "practice-sub-title practice-single-title", esc(group.items[0].title)));
+        var rest = el("ul", "practice-points");
+        group.items[0].points.slice(4).forEach(function (point) {
+          rest.appendChild(el("li", null, esc(point)));
+        });
+        detail.appendChild(rest);
+      } else {
+        group.items.forEach(function (item) {
+          var d = el("details", "practice-sub");
+          d.innerHTML =
+            '<summary><span class="practice-sub-title">' + esc(item.title) +
+            '</span><span class="practice-mark" aria-hidden="true">+</span></summary>';
+          if (item.points && item.points.length) {
+            var list = el("ul", "practice-points");
+            item.points.forEach(function (point) {
+              list.appendChild(el("li", null, esc(point)));
+            });
+            d.appendChild(list);
+          } else if (item.text) {
+            d.appendChild(el("p", null, esc(item.text)));
+          }
+          detail.appendChild(d);
+        });
+      }
+      if (group.outro) {
+        detail.appendChild(el("p", "practice-outro", esc(group.outro)));
+      }
+
+      var expand = el("button", "practice-expand");
+      expand.type = "button";
+      expand.setAttribute("aria-expanded", "false");
+      expand.innerHTML =
+        '<span class="practice-expand-label">Раскрыть все направления</span>' +
+        '<span class="practice-mark" aria-hidden="true">+</span>';
+      expand.addEventListener("click", function () {
+        var open = detail.hidden;
+        detail.hidden = !open;
+        expand.setAttribute("aria-expanded", String(open));
+        expand.classList.toggle("open", open);
+        expand.querySelector(".practice-expand-label").textContent =
+          open ? "Свернуть направления" : "Раскрыть все направления";
+      });
+
+      body.appendChild(expand);
+      body.appendChild(detail);
+      panel.appendChild(body);
+      practicePanels.appendChild(panel);
+      panelBlocks.push(panel);
+    });
+
+    activatePractice(0);
+    shell.appendChild(practiceTabs);
+    shell.appendChild(practicePanels);
+    practicesSlot.appendChild(shell);
+  }
+
+  /* ---------- Конверсионный блок: раскрытие списка случаев ---------- */
+
+  var demandList = document.querySelector(".demand-list");
+  var demandMore = document.querySelector(".demand-more");
+  if (demandList && demandMore) {
+    demandMore.addEventListener("click", function () {
+      var open = !demandList.classList.contains("expanded");
+      demandList.classList.toggle("expanded", open);
+      demandMore.setAttribute("aria-expanded", String(open));
+      demandMore.textContent = open ? "Свернуть список" : "Показать все случаи";
+    });
+  }
+
+  /* ---------- Кнопка «Связаться»: меню мессенджеров ---------- */
+
+  var contactMenu = document.getElementById("contact-menu");
+  var contactToggle = document.querySelector(".contact-toggle");
+  if (contactMenu && contactToggle) {
+    var messengers = C.messengers || {};
+    [
+      ["Telegram", messengers.telegram],
+      ["MAX", messengers.max],
+      ["WhatsApp", messengers.whatsapp]
+    ].forEach(function (pair) {
+      var a = el("a", null, esc(pair[0]));
+      if (isPlaceholder(pair[1])) {
+        a.href = "#";
+      } else {
+        a.href = pair[1];
+        a.target = "_blank";
+        a.rel = "noopener";
+      }
+      contactMenu.appendChild(a);
+    });
+
+    function closeContactMenu() {
+      contactMenu.hidden = true;
+      contactToggle.setAttribute("aria-expanded", "false");
+    }
+
+    contactToggle.addEventListener("click", function () {
+      var open = contactMenu.hidden;
+      contactMenu.hidden = !open;
+      contactToggle.setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", function (e) {
+      if (!contactMenu.hidden && !contactMenu.contains(e.target) && e.target !== contactToggle) {
+        closeContactMenu();
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeContactMenu();
     });
   }
 
@@ -81,24 +267,51 @@
     });
   }
 
+  var thesesSlot = slot("about-theses");
+  if (thesesSlot && SITE.about.theses) {
+    SITE.about.theses.forEach(function (t) {
+      var card = el("div", "about-thesis");
+      card.appendChild(el("h3", null, esc(t.title)));
+      card.appendChild(el("p", null, esc(t.text)));
+      thesesSlot.appendChild(card);
+    });
+  }
+
+  /* Цифры: короткая подпись видна всегда, полная — по клику или наведению */
   var factsSlot = slot("facts");
   if (factsSlot) {
     SITE.about.facts.forEach(function (f, i) {
       var item = el("div", "fact reveal");
       item.style.setProperty("--reveal-delay", i * 0.1 + "s");
       item.appendChild(el("dt", null, esc(f.value)));
-      item.appendChild(el("dd", null, esc(f.label)));
+      item.appendChild(el("dd", "fact-short", esc(f.short || f.label)));
+      if (f.short && f.label && f.short !== f.label) {
+        item.appendChild(el("dd", "fact-full", esc(f.label)));
+        item.classList.add("fact-more");
+        item.tabIndex = 0;
+        item.addEventListener("click", function () {
+          item.classList.toggle("open");
+        });
+        item.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            item.classList.toggle("open");
+          }
+        });
+      }
       factsSlot.appendChild(item);
     });
   }
 
-  /* ---------- Видео ---------- */
+  /* ---------- Видео: первые 6, остальные — по кнопке ---------- */
 
+  var VISIBLE_VIDEOS = 6;
   var videosSlot = slot("videos");
   if (videosSlot) {
     SITE.videos.forEach(function (v, i) {
       var card = el("a", "media-card reveal");
       card.style.setProperty("--reveal-delay", (i % 4) * 0.1 + "s");
+      if (i >= VISIBLE_VIDEOS) card.classList.add("row-hidden");
       if (isPlaceholder(v.link)) {
         card.href = "#media";
         card.setAttribute("aria-disabled", "true");
@@ -113,14 +326,30 @@
         '<span class="media-watch">Смотреть сюжет</span>';
       videosSlot.appendChild(card);
     });
+
+    if (SITE.videos.length > VISIBLE_VIDEOS) {
+      var videosWrap = el("div", "show-more-wrap");
+      var videosMore = el("button", "show-more", "<span>Показать все эфиры</span>");
+      videosMore.type = "button";
+      videosMore.addEventListener("click", function () {
+        videosSlot.querySelectorAll(".row-hidden").forEach(function (n) {
+          n.classList.remove("row-hidden");
+        });
+        videosWrap.remove();
+      });
+      videosWrap.appendChild(videosMore);
+      videosSlot.parentNode.insertBefore(videosWrap, videosSlot.nextSibling);
+    }
   }
 
-  /* ---------- Кейсы ---------- */
+  /* ---------- Кейсы: первые 3, остальные — по кнопке ---------- */
 
+  var VISIBLE_CASES = 3;
   var casesSlot = slot("cases");
   if (casesSlot) {
     SITE.cases.forEach(function (c, i) {
       var row = el("article", "case reveal");
+      if (i >= VISIBLE_CASES) row.classList.add("row-hidden");
       var meta = (c.sum && c.sum.indexOf("ПРИМЕР") === -1)
         ? '<span class="case-result-label">' + esc(c.sum) + "</span>" : "";
       row.innerHTML =
@@ -136,6 +365,20 @@
         "</div>";
       casesSlot.appendChild(row);
     });
+
+    if (SITE.cases.length > VISIBLE_CASES) {
+      var casesWrap = el("div", "show-more-wrap");
+      var casesMore = el("button", "show-more", "<span>Показать ещё дела</span>");
+      casesMore.type = "button";
+      casesMore.addEventListener("click", function () {
+        casesSlot.querySelectorAll(".row-hidden").forEach(function (n) {
+          n.classList.remove("row-hidden");
+        });
+        casesWrap.remove();
+      });
+      casesWrap.appendChild(casesMore);
+      casesSlot.appendChild(casesWrap);
+    }
   }
 
   /* ---------- Вопросы и ответы ---------- */
@@ -589,7 +832,7 @@
   /* ---------- Появление блоков при скролле ---------- */
 
   document.querySelectorAll(
-    ".section-head, .about-grid > *, .reviews-cta, .documents-gate, .consult-grid > *, .interlude-quote"
+    ".section-head, .about-grid > *, .reviews-cta, .documents-gate, .consult-grid > *, .interlude-quote, .demand-grid > *, .timely-inner"
   ).forEach(function (n) { n.classList.add("reveal"); });
 
   var observer = new IntersectionObserver(function (entries) {
@@ -624,7 +867,9 @@
     "description": "Судебный юрист: банкротство физических и юридических лиц, субсидиарная ответственность, оспаривание сделок, семейные, налоговые, таможенные и корпоративные споры.",
     "areaServed": "Россия",
     "address": { "@type": "PostalAddress", "addressLocality": "Москва", "addressCountry": "RU" },
-    "knowsAbout": SITE.practices.map(function (p) { return p.title; })
+    "knowsAbout": SITE.practices.reduce(function (acc, group) {
+      return acc.concat([group.title], group.items.map(function (item) { return item.title; }));
+    }, [])
   });
 
   addJsonLd({
